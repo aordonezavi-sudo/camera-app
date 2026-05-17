@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Cámara Web - HTTPS</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            max-width: 600px;
+            width: 100%;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 14px;
+        }
+
+        /* ALERTAS */
+        .alert {
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+            animation: fadeIn 0.3s ease-in;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .alert.show {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .alert-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .alert-warning {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            color: #856404;
+        }
+
+        .alert-error {
+            background-color: #f8d7da;
+            border-left: 4px solid #dc3545;
+            color: #721c24;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            border-left: 4px solid #28a745;
+            color: #155724;
+        }
+
+        .alert-info {
+            background-color: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            color: #0c5460;
+        }
+
+        /* VIDEO CONTAINER */
+        .video-container {
+            position: relative;
+            width: 100%;
+            background: #000;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .video-container.show {
+            display: block;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        #video {
+            width: 100%;
+            height: auto;
+            display: block;
+            transform: scaleX(-1);
+            background: #000;
+        }
+
+        .video-controls {
+            position: absolute;
+            bottom: 15px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        /* BOTONES */
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            flex: 1;
+            min-width: 150px;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background-color: #c82333;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(220, 53, 69, 0.4);
+        }
+
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background-color: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* INFORMACIÓN */
+        .info-box {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 13px;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .info-box strong {
+            color: #333;
+        }
+
+        /* STATUS */
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.https {
+            background-color: #28a745;
+        }
+
+        .status-indicator.http {
+            background-color: #dc3545;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+                border-radius: 15px;
+            }
+
+            h1 {
+                font-size: 22px;
+            }
+
+            button {
+                padding: 10px 16px;
+                font-size: 14px;
+                min-width: auto;
+            }
+
+            .button-group {
+                gap: 10px;
+            }
+        }
+
+        /* LOADING STATE */
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- ENCABEZADO -->
+        <h1>📷 Cámara Web</h1>
+        <p class="subtitle">Acceso a la cámara de tu dispositivo</p>
+
+        <!-- ALERTAS -->
+        <div id="alertHttps" class="alert alert-warning">
+            <span class="alert-icon">⚠️</span>
+            <div>
+                <strong>Atención:</strong> Para usar la cámara, abre esta página desde <strong>HTTPS</strong>. La seguridad es importante.
+            </div>
+        </div>
+
+        <div id="alertError" class="alert alert-error">
+            <span class="alert-icon">❌</span>
+            <div id="alertErrorText">Error: No se pudo acceder a la cámara</div>
+        </div>
+
+        <div id="alertSuccess" class="alert alert-success">
+            <span class="alert-icon">✅</span>
+            <div>Cámara activada correctamente</div>
+        </div>
+
+        <div id="alertInfo" class="alert alert-info">
+            <span class="alert-icon">ℹ️</span>
+            <div id="alertInfoText">Información</div>
+        </div>
+
+        <!-- VIDEO -->
+        <div class="video-container" id="videoContainer">
+            <video id="video" playsinline autoplay></video>
+        </div>
+
+        <!-- BOTONES -->
+        <div class="button-group">
+            <button id="btnOpenCamera" class="btn-primary">
+                <span>📷</span>
+                <span>Abrir Cámara</span>
+            </button>
+            <button id="btnCloseCamera" class="btn-danger" style="display: none;">
+                <span>✕</span>
+                <span>Cerrar</span>
+            </button>
+        </div>
+
+        <!-- INFORMACIÓN -->
+        <div class="info-box">
+            <p><strong>✓ Compatibilidad:</strong> Chrome Android, Safari iPhone, Firefox</p>
+            <p><strong>✓ Protocolo:</strong> <span id="protocol">Verificando...</span></p>
+            <p><strong>✓ Permiso:</strong> Se solicita al abrir la cámara</p>
+        </div>
+
+        <!-- STATUS -->
+        <div class="status">
+            <div class="status-indicator" id="statusIndicator"></div>
+            <span id="statusText">Verificando conexión segura...</span>
+        </div>
+    </div>
+
+    <script>
+        // ========================================
+        // VARIABLES GLOBALES
+        // ========================================
+        let stream = null;
+        const videoElement = document.getElementById('video');
+        const videoContainer = document.getElementById('videoContainer');
+        const btnOpenCamera = document.getElementById('btnOpenCamera');
+        const btnCloseCamera = document.getElementById('btnCloseCamera');
+        const alertHttps = document.getElementById('alertHttps');
+        const alertError = document.getElementById('alertError');
+        const alertErrorText = document.getElementById('alertErrorText');
+        const alertSuccess = document.getElementById('alertSuccess');
+        const alertInfo = document.getElementById('alertInfo');
+        const alertInfoText = document.getElementById('alertInfoText');
+        const protocolSpan = document.getElementById('protocol');
+        const statusIndicator = document.getElementById('statusIndicator');
+        const statusText = document.getElementById('statusText');
+
+        // ========================================
+        // FUNCIONES DE VERIFICACIÓN
+        // ========================================
+
+        /**
+         * Verifica si la página está en HTTPS
+         */
+        function isHttps() {
+            return window.location.protocol === 'https:' || window.location.hostname === 'localhost';
+        }
+
+        /**
+         * Verifica el soporte de getUserMedia
+         */
+        function hasUserMediaSupport() {
+            return !!(
+                navigator.mediaDevices &&
+                navigator.mediaDevices.getUserMedia
+            );
+        }
+
+        /**
+         * Obtiene información del navegador
+         */
+        function getBrowserInfo() {
+            const ua = navigator.userAgent;
+            if (ua.includes('Chrome')) return 'Chrome';
+            if (ua.includes('Safari') && !ua.includes('Chrome')) return 'Safari';
+            if (ua.includes('Firefox')) return 'Firefox';
+            if (ua.includes('Edge')) return 'Edge';
+            return 'Navegador desconocido';
+        }
+
+        // ========================================
+        // FUNCIONES DE ALERTA
+        // ========================================
+
+        /**
+         * Muestra una alerta
+         */
+        function showAlert(alertElement, show = true) {
+            if (show) {
+                alertElement.classList.add('show');
+            } else {
+                alertElement.classList.remove('show');
+            }
+        }
+
+        /**
+         * Oculta todas las alertas
+         */
+        function hideAllAlerts() {
+            showAlert(alertHttps, false);
+            showAlert(alertError, false);
+            showAlert(alertSuccess, false);
+            showAlert(alertInfo, false);
+        }
+
+        /**
+         * Muestra alerta de error
+         */
+        function showErrorAlert(message) {
+            hideAllAlerts();
+            alertErrorText.textContent = message;
+            showAlert(alertError, true);
+        }
+
+        /**
+         * Muestra alerta de éxito
+         */
+        function showSuccessAlert() {
+            hideAllAlerts();
+            showAlert(alertSuccess, true);
+        }
+
+        /**
+         * Muestra alerta de información
+         */
+        function showInfoAlert(message) {
+            hideAllAlerts();
+            alertInfoText.textContent = message;
+            showAlert(alertInfo, true);
+        }
+
+        // ========================================
+        // FUNCIONES DE CÁMARA
+        // ========================================
+
+        /**
+         * Abre la cámara del dispositivo
+         */
+        async function openCamera() {
+            try {
+                // Verificar HTTPS
+                if (!isHttps()) {
+                    showErrorAlert('❌ Error: Esta página debe abrirse desde HTTPS para usar la cámara.');
+                    showAlert(alertHttps, true);
+                    return;
+                }
+
+                // Verificar soporte de getUserMedia
+                if (!hasUserMediaSupport()) {
+                    showErrorAlert('❌ Error: Tu navegador no soporta acceso a la cámara.');
+                    return;
+                }
+
+                // Cambiar estado del botón
+                btnOpenCamera.disabled = true;
+                btnOpenCamera.innerHTML = '<span class="spinner"></span><span>Solicitando permiso...</span>';
+
+                // Solicitar permiso de cámara
+                showInfoAlert('Solicitud de permiso en proceso...');
+
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: 'user', // Cámara frontal
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    },
+                    audio: false // Sin audio
+                });
+
+                // Asignar stream al elemento video
+                videoElement.srcObject = stream;
+
+                // Esperar a que se cargue el video
+                await new Promise((resolve) => {
+                    videoElement.onloadedmetadata = resolve;
+                });
+
+                // Reproducir video
+                videoElement.play().catch((error) => {
+                    console.warn('Error al reproducir video:', error);
+                });
+
+                // Mostrar elementos de UI
+                videoContainer.classList.add('show');
+                btnOpenCamera.style.display = 'none';
+                btnCloseCamera.style.display = 'flex';
+
+                showSuccessAlert();
+
+                // Log en consola
+                console.log('✅ Cámara abierta correctamente');
+                console.log('📱 Navegador:', getBrowserInfo());
+                console.log('🔒 Protocolo:', window.location.protocol);
+
+            } catch (error) {
+                console.error('Error al acceder a la cámara:', error);
+
+                // Manejo de errores específicos
+                let errorMessage = '❌ Error: No se pudo acceder a la cámara.';
+
+                if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+                    errorMessage = '❌ Permiso denegado: Debes permitir el acceso a la cámara.';
+                } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+                    errorMessage = '❌ Error: No se encontró ninguna cámara en tu dispositivo.';
+                } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
+                    errorMessage = '❌ Error: La cámara está siendo usada por otra aplicación.';
+                } else if (error.name === 'SecurityError') {
+                    errorMessage = '❌ Error de seguridad: La cámara no está disponible en conexiones inseguras.';
+                } else if (error.name === 'TypeError') {
+                    errorMessage = '❌ Error: Parámetros inválidos para acceder a la cámara.';
+                }
+
+                showErrorAlert(errorMessage);
+                btnOpenCamera.disabled = false;
+                btnOpenCamera.innerHTML = '<span>📷</span><span>Abrir Cámara</span>';
+            }
+        }
+
+        /**
+         * Cierra la cámara
+         */
+        function closeCamera() {
+            // Detener todas las pistas de stream
+            if (stream) {
+                stream.getTracks().forEach((track) => {
+                    track.stop();
+                });
+                stream = null;
+            }
+
+            // Limpiar elemento video
+            videoElement.srcObject = null;
+
+            // Actualizar UI
+            videoContainer.classList.remove('show');
+            btnOpenCamera.style.display = 'flex';
+            btnCloseCamera.style.display = 'none';
+            btnOpenCamera.disabled = false;
+
+            hideAllAlerts();
+
+            console.log('✅ Cámara cerrada correctamente');
+        }
+
+        // ========================================
+        // INICIALIZACIÓN
+        // ========================================
+
+        /**
+         * Inicializa la aplicación
+         */
+        function init() {
+            // Actualizar protocolo
+            const protocol = isHttps() ? 'HTTPS ✓' : 'HTTP (inseguro)';
+            const isSecure = isHttps();
+            protocolSpan.textContent = protocol;
+
+            // Actualizar indicador de estado
+            if (isSecure) {
+                statusIndicator.classList.add('https');
+                statusIndicator.classList.remove('http');
+                statusText.textContent = 'Conexión segura (HTTPS)';
+            } else {
+                statusIndicator.classList.remove('https');
+                statusIndicator.classList.add('http');
+                statusText.textContent = 'Conexión insegura (HTTP)';
+            }
+
+            // Mostrar alerta si no es HTTPS
+            if (!isHttps()) {
+                showAlert(alertHttps, true);
+            }
+
+            // Verificar soporte
+            if (!hasUserMediaSupport()) {
+                showErrorAlert('Tu navegador no soporta acceso a la cámara.');
+                btnOpenCamera.disabled = true;
+            }
+
+            // Event listeners
+            btnOpenCamera.addEventListener('click', openCamera);
+            btnCloseCamera.addEventListener('click', closeCamera);
+
+            // Cerrar cámara si se cierra el tab/ventana
+            window.addEventListener('beforeunload', closeCamera);
+
+            console.log('✅ Aplicación inicializada');
+            console.log('🔒 HTTPS:', isHttps());
+            console.log('📱 Navegador:', getBrowserInfo());
+        }
+
+        // Iniciar cuando el DOM está listo
+        document.addEventListener('DOMContentLoaded', init);
+
+        // Para asegurar que init se ejecute en todos los casos
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    </script>
+</body>
+</html>
