@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Cabina Fotográfica Virtual</title>
+
+  <style>
+    :root{
+      --rojo:#c8102e;
+      --rojo-oscuro:#7c0015;
+      --dorado:#ffd166;
+      --blanco:#ffffff;
+    }
+
+    *{
+      box-sizing:border-box;
+      -webkit-tap-highlight-color:transparent;
+    }
+
+    html, body{
+      margin:0;
+      width:100%;
+      min-height:100%;
+      font-family:Arial, Helvetica, sans-serif;
+      background:
+        radial-gradient(circle at top, rgba(255,255,255,.22), transparent 30%),
+        linear-gradient(155deg, var(--rojo), var(--rojo-oscuro));
+      color:white;
+      overflow-x:hidden;
+    }
+
+    body{
+      display:flex;
+      justify-content:center;
+      padding:14px;
+    }
+
+    .app{
+      width:100%;
+      max-width:480px;
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+
+    header{
+      text-align:center;
+      padding-top:8px;
+    }
+
+    h1{
+      margin:0;
+      font-size:clamp(30px, 8vw, 42px);
+      line-height:1;
+      font-weight:900;
+      text-shadow:0 4px 12px rgba(0,0,0,.35);
+    }
+
+    .subtitle{
+      margin:8px 0 0;
+      font-size:15px;
+      opacity:.95;
+    }
+
+    .band{
+      height:18px;
+      border-radius:30px;
+      border:2px solid rgba(255,255,255,.48);
+      background:repeating-linear-gradient(
+        45deg,
+        var(--dorado) 0 8px,
+        transparent 8px 16px
+      );
+    }
+
+    .notice{
+      padding:10px 12px;
+      border-radius:16px;
+      text-align:center;
+      font-size:13px;
+      line-height:1.35;
+      background:rgba(0,0,0,.25);
+      border:2px solid rgba(255,255,255,.32);
+    }
+
+    .notice.ok{
+      background:rgba(0,170,90,.25);
+      border-color:rgba(190,255,220,.7);
+    }
+
+    .notice.error{
+      background:rgba(0,0,0,.42);
+      border-color:rgba(255,210,210,.8);
+    }
+
+    .screen{
+      position:relative;
+      width:100%;
+      aspect-ratio:9/14;
+      min-height:500px;
+      border-radius:30px;
+      overflow:hidden;
+      border:5px solid white;
+      background:#111;
+      box-shadow:0 18px 42px rgba(0,0,0,.38);
+    }
+
+    canvas{
+      width:100%;
+      height:100%;
+      display:block;
+      background:#111;
+    }
+
+    video{
+      display:none;
+    }
+
+    .placeholder{
+      position:absolute;
+      inset:0;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      align-items:center;
+      text-align:center;
+      padding:30px;
+      background:
+        linear-gradient(rgba(0,0,0,.15), rgba(0,0,0,.55)),
+        linear-gradient(160deg,#246b3b,#74b96f);
+      z-index:2;
+    }
+
+    .placeholder .icon{
+      font-size:68px;
+      margin-bottom:10px;
+    }
+
+    .placeholder strong{
+      font-size:25px;
+      text-shadow:0 3px 10px rgba(0,0,0,.45);
+    }
+
+    .placeholder span{
+      font-size:15px;
+      margin-top:8px;
+      line-height:1.35;
+      text-shadow:0 2px 8px rgba(0,0,0,.45);
+    }
+
+    .controls{
+      display:grid;
+      gap:10px;
+      padding-bottom:18px;
+    }
+
+    button{
+      border:none;
+      border-radius:18px;
+      padding:14px 10px;
+      font-size:15px;
+      font-weight:900;
+      cursor:pointer;
+      box-shadow:0 8px 20px rgba(0,0,0,.24);
+      transition:transform .12s ease, opacity .12s ease;
+    }
+
+    button:active{
+      transform:scale(.96);
+    }
+
+    button:disabled{
+      opacity:.45;
+      cursor:not-allowed;
+    }
+
+    .primary{
+      padding:18px;
+      font-size:20px;
+      color:#760014;
+      background:linear-gradient(180deg,#fff,#ffe2e8);
+    }
+
+    .landscapes{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:8px;
+    }
+
+    .landscape{
+      background:rgba(255,255,255,.18);
+      color:white;
+      backdrop-filter:blur(6px);
+    }
+
+    .landscape.active{
+      background:var(--dorado);
+      color:#670012;
+    }
+
+    .grid2{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+    }
+
+    .secondary{
+      background:white;
+      color:#850018;
+    }
+
+    .dark{
+      background:rgba(0,0,0,.35);
+      color:white;
+    }
+
+    .status{
+      min-height:24px;
+      text-align:center;
+      color:#fff2bd;
+      font-size:14px;
+      line-height:1.35;
+      text-shadow:0 2px 8px rgba(0,0,0,.35);
+    }
+
+    .preview{
+      display:none;
+      width:100%;
+      border:4px solid white;
+      border-radius:20px;
+      box-shadow:0 12px 28px rgba(0,0,0,.3);
+    }
+
+    .help{
+      font-size:12px;
+      line-height:1.35;
+      text-align:center;
+      opacity:.88;
+    }
+
+    @media(max-width:380px){
+      body{padding:10px;}
+      .screen{min-height:440px; border-radius:24px;}
+      button{font-size:13px;}
+      .primary{font-size:18px;}
+    }
+  </style>
+</head>
+
+<body>
+  <main class="app">
+    <header>
+      <h1>Cabina fotográfica</h1>
+      <p class="subtitle">Elige un paisaje y toma tu foto turística</p>
+    </header>
+
+    <div class="band"></div>
+
+    <div class="notice" id="notice">
+      Para usar la cámara, abre esta página desde HTTPS.
+    </div>
+
+    <section class="screen" id="screen">
+      <video id="video" autoplay playsinline muted></video>
+      <canvas id="canvas"></canvas>
+
+      <div class="placeholder" id="placeholder">
+        <div class="icon">📷</div>
+        <strong>Presiona Abrir cámara</strong>
+        <span>Acepta el permiso del celular para iniciar la cabina.</span>
+      </div>
+    </section>
+
+    <section class="controls">
+      <button class="primary" id="openCamera">📷 Abrir cámara</button>
+
+      <div class="landscapes">
+        <button class="landscape active" data-place="machupichu">Machupichu</button>
+        <button class="landscape" data-place="colca">Colca</button>
+        <button class="landscape" data-place="amazonas">Amazonas</button>
+      </div>
+
+      <div class="grid2">
+        <button class="secondary" id="capture">✨ Tomar foto</button>
+        <button class="secondary" id="download" disabled>⬇ Descargar</button>
+      </div>
+
+      <div class="grid2">
+        <button class="dark" id="switchCamera">🔄 Cambiar cámara</button>
+        <button class="dark" id="fullscreen">⛶ Pantalla completa</button>
+      </div>
+
+      <img class="preview" id="preview" alt="Foto tomada">
+      <div class="status" id="status"></div>
+
+      <div class="help">
+        Archivo listo para subir como <b>index.html</b> a GitHub Pages, Netlify o Vercel.
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d", { willReadFrequently:true });
+
+    const screenBox = document.getElementById("screen");
+    const placeholder = document.getElementById("placeholder");
+    const statusEl = document.getElementById("status");
+    const notice = document.getElementById("notice");
+    const preview = document.getElementById("preview");
+
+    const openCameraBtn = document.getElementById("openCamera");
+    const captureBtn = document.getElementById("capture");
+    const downloadBtn = document.getElementById("download");
+    const switchCameraBtn = document.getElementById("switchCamera");
+    const fullscreenBtn = document.getElementById("fullscreen");
+    const landscapeBtns = document.querySelectorAll(".landscape");
+
+    let stream = null;
+    let facingMode = "user";
+    let selectedPlace = "machupichu";
+    let running = false;
+    let capturedImage = "";
+    let photoNumber = Number(localStorage.getItem("cabina_photo_number") || "1");
+
+    function setStatus(text){
+      statusEl.textContent = text || "";
+    }
+
+    function isSecure(){
+      return location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1";
+    }
+
+    function checkHttps(){
+      if(isSecure()){
+        notice.className = "notice ok";
+        notice.textContent = "HTTPS activo. La cámara puede funcionar correctamente.";
+        return true;
+      }
+
+      notice.className = "notice error";
+      notice.textContent = "Para usar la cámara, abre esta página desde HTTPS.";
+      return false;
+    }
+
+    function resizeCanvas(){
+      const rect = screenBox.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+      canvas.width = Math.round(rect.width * dpr);
+      canvas.height = Math.round(rect.height * dpr);
+
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function triangle(x1,y1,x2,y2,x3,y3,color){
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(x1,y1);
+      ctx.lineTo(x2,y2);
+      ctx.lineTo(x3,y3);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function drawBackground(w,h){
+      if(selectedPlace === "machupichu"){
+        const sky = ctx.createLinearGradient(0,0,0,h);
+        sky.addColorStop(0,"#7ecbff");
+        sky.addColorStop(.36,"#dff6ff");
+        sky.addColorStop(.37,"#56a764");
+        sky.addColorStop(1,"#1d5e39");
+        ctx.fillStyle = sky;
+        ctx.fillRect(0,0,w,h);
+
+        triangle(-w*.05,h*.48,w*.28,h*.17,w*.63,h*.50,"#2f7d48");
+        triangle(w*.22,h*.48,w*.63,h*.12,w*1.03,h*.50,"#276b43");
+        triangle(-w*.10,h*.58,w*.40,h*.24,w*1.02,h*.58,"#3d9155");
+
+        ctx.fillStyle = "#9b8a68";
+        for(let i=0;i<7;i++){
+          ctx.fillRect(w*.16+i*w*.09, h*.62+i*4, w*.18, 12);
+        }
+
+        ctx.fillStyle = "rgba(255,255,255,.92)";
+        ctx.font = "bold 22px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("MACHUPICHU", w/2, 38);
+      }
+
+      if(selectedPlace === "colca"){
+        const sky = ctx.createLinearGradient(0,0,0,h);
+        sky.addColorStop(0,"#87d2ff");
+        sky.addColorStop(.42,"#ffe0aa");
+        sky.addColorStop(1,"#8c4f2f");
+        ctx.fillStyle = sky;
+        ctx.fillRect(0,0,w,h);
+
+        triangle(-w*.18,h*.72,w*.25,h*.25,w*.76,h*.72,"#9b5b35");
+        triangle(w*.24,h*.73,w*.82,h*.30,w*1.20,h*.73,"#6f3d28");
+
+        ctx.strokeStyle = "rgba(255,230,160,.6)";
+        ctx.lineWidth = 4;
+        for(let y=h*.45; y<h*.82; y+=32){
+          ctx.beginPath();
+          ctx.moveTo(0,y);
+          ctx.quadraticCurveTo(w*.5,y+24,w,y-8);
+          ctx.stroke();
+        }
+
+        ctx.fillStyle = "rgba(255,255,255,.92)";
+        ctx.font = "bold 22px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("COLCA", w/2, 38);
+      }
+
+      if(selectedPlace === "amazonas"){
+        const sky = ctx.createLinearGradient(0,0,0,h);
+        sky.addColorStop(0,"#9be7ff");
+        sky.addColorStop(.45,"#64b96a");
+        sky.addColorStop(1,"#0e5a36");
+        ctx.fillStyle = sky;
+        ctx.fillRect(0,0,w,h);
+
+        ctx.fillStyle = "#0d6b3a";
+        for(let i=0;i<11;i++){
+          const x = i*w/10;
+          ctx.beginPath();
+          ctx.arc(x,h*.54,70,0,Math.PI*2);
+          ctx.fill();
+        }
+
+        ctx.fillStyle = "#6ab7de";
+        ctx.beginPath();
+        ctx.moveTo(0,h*.72);
+        ctx.bezierCurveTo(w*.25,h*.66,w*.52,h*.84,w,h*.70);
+        ctx.lineTo(w,h);
+        ctx.lineTo(0,h);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = "rgba(255,255,255,.92)";
+        ctx.font = "bold 22px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("AMAZONAS", w/2, 38);
+      }
+    }
+
+    function drawFrame(){
+      if(!running) return;
+
+      const rect = screenBox.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+
+      ctx.clearRect(0,0,w,h);
+      drawBackground(w,h);
+
+      if(video.readyState >= 2){
+        const videoRatio = video.videoWidth / video.videoHeight;
+
+        let personW = w * 0.88;
+        let personH = personW / videoRatio;
+
+        if(personH < h * .86){
+          personH = h * .90;
+          personW = personH * videoRatio;
+        }
+
+        const dx = (w - personW) / 2;
+        const dy = h - personH + 10;
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.ellipse(w/2, h*.94, w*.30, 18, 0, 0, Math.PI*2);
+        ctx.fillStyle = "rgba(0,0,0,.28)";
+        ctx.filter = "blur(6px)";
+        ctx.fill();
+        ctx.restore();
+
+        ctx.save();
+        if(facingMode === "user"){
+          ctx.translate(w,0);
+          ctx.scale(-1,1);
+          ctx.drawImage(video, w - dx - personW, dy, personW, personH);
+        }else{
+          ctx.drawImage(video, dx, dy, personW, personH);
+        }
+        ctx.restore();
+
+        ctx.fillStyle = "rgba(200,16,46,.90)";
+        ctx.fillRect(0,h-58,w,58);
+
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 18px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("Cabina turística virtual", w/2, h-24);
+      }
+
+      requestAnimationFrame(drawFrame);
+    }
+
+    async function stopCamera(){
+      if(stream){
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+      }
+      running = false;
+    }
+
+    async function openCamera(){
+      if(!checkHttps()){
+        setStatus("Abre este HTML desde un enlace HTTPS para permitir la cámara.");
+        return;
+      }
+
+      if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+        setStatus("Tu navegador no permite abrir la cámara.");
+        return;
+      }
+
+      try{
+        setStatus("Solicitando permiso de cámara...");
+        await stopCamera();
+        resizeCanvas();
+
+        stream = await navigator.mediaDevices.getUserMedia({
+          video:{
+            facingMode:facingMode,
+            width:{ideal:1280},
+            height:{ideal:720}
+          },
+          audio:false
+        });
+
+        video.srcObject = stream;
+        await video.play();
+
+        placeholder.style.display = "none";
+        running = true;
+        setStatus("Cámara activa. Elige paisaje y toma la foto.");
+        drawFrame();
+      }catch(error){
+        console.error(error);
+        placeholder.style.display = "flex";
+
+        if(error.name === "NotAllowedError" || error.name === "PermissionDeniedError"){
+          setStatus("Permiso denegado. Toca el candado 🔒 y permite Cámara.");
+        }else if(error.name === "NotFoundError"){
+          setStatus("No se encontró cámara en este celular.");
+        }else if(error.name === "NotReadableError"){
+          setStatus("La cámara está siendo usada por otra aplicación.");
+        }else{
+          setStatus("No se pudo abrir la cámara. Revisa HTTPS y permisos.");
+        }
+      }
+    }
+
+    function capture(){
+      if(!running){
+        setStatus("Primero abre la cámara.");
+        return;
+      }
+
+      try{
+        capturedImage = canvas.toDataURL("image/png", 1);
+        preview.src = capturedImage;
+        preview.style.display = "block";
+        downloadBtn.disabled = false;
+        setStatus("Foto tomada. Ahora presiona Descargar.");
+      }catch(error){
+        setStatus("No se pudo tomar la foto. Recarga e intenta nuevamente.");
+      }
+    }
+
+    function download(){
+      if(!capturedImage) return;
+
+      const a = document.createElement("a");
+      a.href = capturedImage;
+      a.download = `cabina_fotografica_${String(photoNumber).padStart(3,"0")}.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      photoNumber++;
+      localStorage.setItem("cabina_photo_number", String(photoNumber));
+      setStatus("Foto descargada.");
+    }
+
+    async function switchCamera(){
+      facingMode = facingMode === "user" ? "environment" : "user";
+      setStatus(facingMode === "user" ? "Cambiando a cámara frontal..." : "Cambiando a cámara trasera...");
+      await openCamera();
+    }
+
+    async function fullscreen(){
+      try{
+        if(!document.fullscreenElement){
+          await document.documentElement.requestFullscreen();
+        }else{
+          await document.exitFullscreen();
+        }
+      }catch(error){
+        setStatus("Pantalla completa no disponible.");
+      }
+    }
+
+    landscapeBtns.forEach(btn=>{
+      btn.addEventListener("click",()=>{
+        landscapeBtns.forEach(b=>b.classList.remove("active"));
+        btn.classList.add("active");
+        selectedPlace = btn.dataset.place;
+        setStatus("Paisaje seleccionado: " + btn.textContent);
+      });
+    });
+
+    openCameraBtn.addEventListener("click", openCamera);
+    captureBtn.addEventListener("click", capture);
+    downloadBtn.addEventListener("click", download);
+    switchCameraBtn.addEventListener("click", switchCamera);
+    fullscreenBtn.addEventListener("click", fullscreen);
+
+    window.addEventListener("resize", resizeCanvas);
+
+    checkHttps();
+    resizeCanvas();
+  </script>
+</body>
+</html>
