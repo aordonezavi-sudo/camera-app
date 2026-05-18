@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cabina Fotográfica Dropbox</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #b40000, #e53935, #8b0000);
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 18px;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 460px;
+      background: rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 26px;
+      padding: 20px;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(10px);
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 30px;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 15px;
+      opacity: 0.9;
+      margin-bottom: 18px;
+    }
+
+    .camera-box {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 3 / 4;
+      background: #111;
+      border-radius: 22px;
+      overflow: hidden;
+      border: 4px solid rgba(255, 255, 255, 0.85);
+      margin-bottom: 16px;
+    }
+
+    video, canvas, #preview {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    canvas {
+      display: none;
+    }
+
+    #preview {
+      display: none;
+    }
+
+    .controls, .destinos {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    button {
+      border: none;
+      border-radius: 16px;
+      padding: 15px 16px;
+      font-size: 17px;
+      font-weight: bold;
+      cursor: pointer;
+      color: #8b0000;
+      background: white;
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary {
+      background: #fff200;
+      color: #7a0000;
+    }
+
+    .btn-upload {
+      background: #ffffff;
+      color: #b40000;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.45);
+    }
+
+    .destinos {
+      display: none;
+    }
+
+    .status {
+      min-height: 28px;
+      margin-top: 14px;
+      font-size: 15px;
+      font-weight: bold;
+    }
+
+    .small {
+      margin-top: 10px;
+      font-size: 12px;
+      opacity: 0.8;
+      line-height: 1.35;
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <h1>Cabina de Fotos</h1>
+    <p class="subtitle">Toma una foto y súbela automáticamente a Dropbox</p>
+
+    <div class="camera-box">
+      <video id="video" autoplay playsinline muted></video>
+      <canvas id="canvas"></canvas>
+      <img id="preview" alt="Foto tomada" />
+    </div>
+
+    <div class="controls">
+      <button class="btn-primary" id="startBtn">📷 Abrir cámara</button>
+      <button class="btn-primary" id="captureBtn" disabled>Tomar foto</button>
+      <button class="btn-secondary" id="retakeBtn" style="display:none;">Tomar otra foto</button>
+    </div>
+
+    <div class="destinos" id="destinos">
+      <button class="btn-upload" onclick="subirFoto('machupichu')">Subir a Machupichu</button>
+      <button class="btn-upload" onclick="subirFoto('colca')">Subir a Colca</button>
+      <button class="btn-upload" onclick="subirFoto('puno')">Subir a Puno</button>
+    </div>
+
+    <div class="status" id="status"></div>
+    <p class="small">Carpeta principal Dropbox: Cusco</p>
+  </main>
+
+  <script>
+    const DROPBOX_TOKEN = "sl.u.AGeZYHtpxh5RUQ7MciTISWD3A-I2F-U2wgU3bvhFoEHXH8szjNQcEUooFEzGO9sYLT9gf8cB4UdFYfHcdTjjiy-i8cjCBsi8sHCV5hXbRBYOdFti6l6x9mREbR4OCg7CJnLTQ7dxDK0Cc8FZfaHNvxlQExx16iGNDTpdT7rmxIuX5CBBO8eHo9UiqvdRpDQgei_WHwMY9SsD6L1pxk1UjeReYi2kP9pwkpYHdpZR-GOwHvfy-RDiOEm-m54Pwqv0HtvMrYl-W5ajRzY_SNR7m66zlP4e-p6PWVj540FqAxUe7EdHYOpztwyNyehX-QKw2G6sKJWmhbDW6jIvc0Jy4evPIcdZ6Tgti2gKujZlT1ozN6RTUMsHuYwob3FxlWpgHWKlVgYss7y2bXTOkwq_8YuHKJocIHjj_CfOJYaZWlRegIHRdlkTH-0LPlIeCcZzbV9t8pFBcPDY8nwvAxHQ-ReQlhjNRu2Y2IHDYGhii1KGthVl0889IjZENMyJnGzUK5nbUHGG_405ZDGhLZOnFGllL9s1nhYZ5r6aAjQs9_2safUbrgyXyMG2PIX9dAdidFiG1HOgRBKe5KdsYihSII8lpxaGCOlfIUaMXgCbpA7ahs-Vx9pV9MWR3MnVv1-ZcSvYY9j3nFVUq3UVSglqh_HFcEEyb3EWrv-nLq06sNWzjN-jFtuZekSiodIR55xNRoD5H9lLOZmoIoBPJo9TNDzoIy_1tcw2SEztzDOaD9YTVCmTkxUqTFTiyj852H4_8J4uh4gYzq_Ppj2DYb84Ev2ycjskjQnOOzwz_jWwrnrcyyTT2p2lXKw_lOz-g3kx2GMcTI2-bdXkVVYYhgnEJPOyTHcKbEFSRpxS4PaDcC9sOzQI2N0NZk09psa70ET5peDa-TrO4g2LR0yzMjUOekaRPKQdE-_YAvbdVdT_TJQDx3vG-MiJzSgajjLzXDsx3_vduZ770LDq8h9yGGofKmDHZ1pZ27j_0VjNQD6zfsM2HajOY19x_2pZdoD24PrTOhKIlK5MhhHw2Y5ONw7cbKK-QuBIO2FxZAn9_Ybuok00K9BRHbgoR2zKnJNUN6qTH1jgOtf9Bi1o6apLxUB2fWxeMWpJ-1tM63Ej2gLC7L_IqNvEjlm4kr0inHzZ3Vl_P2tj51Gh5rj95WfA1BgL1dT0Ub_0vDrN4mqhXyZSfiQihcHxMYDCD3E-AlSCNtE4dHvROkqvngE0vGNe-4rs1N-ShGWogj3bElM4gtE2r8POC8w7YVAdNGBdiV8c_NRotxuYe__oFkyWUbjYUWYjxAKvp6PqcX8OJtw24IT6Sm_CZXgE0K-8Beym6W_7jizjAVNj4zGL8t8vQsFGwgJeGvP0nCw2PoumwQ2vTRbaRRe31SSqaErkoaiNakY_BN15EPINoyFhrpYY8iKGbztxb5cjD0imQaV-xceRfF9D3CcRV9duBs-9dmvOJVGkIxbfM3o";
+
+    const CARPETA_PRINCIPAL = "Cusco";
+
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const preview = document.getElementById("preview");
+    const statusBox = document.getElementById("status");
+    const startBtn = document.getElementById("startBtn");
+    const captureBtn = document.getElementById("captureBtn");
+    const retakeBtn = document.getElementById("retakeBtn");
+    const destinos = document.getElementById("destinos");
+
+    let stream = null;
+    let fotoBlob = null;
+
+    function setStatus(text) {
+      statusBox.textContent = text;
+    }
+
+    function numeroSecuencial(destino) {
+      const key = `contador_${destino}`;
+      const actual = parseInt(localStorage.getItem(key) || "0", 10) + 1;
+      localStorage.setItem(key, actual);
+      return String(actual).padStart(3, "0");
+    }
+
+    async function abrirCamara() {
+      try {
+        setStatus("Abriendo cámara...");
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: "environment",
+            width: { ideal: 1280 },
+            height: { ideal: 1920 }
+          },
+          audio: false
+        });
+
+        video.srcObject = stream;
+        video.style.display = "block";
+        preview.style.display = "none";
+        captureBtn.disabled = false;
+        startBtn.style.display = "none";
+        retakeBtn.style.display = "none";
+        destinos.style.display = "none";
+        setStatus("Cámara lista");
+      } catch (error) {
+        setStatus("No se pudo abrir la cámara. Usa HTTPS y acepta permisos.");
+        console.error(error);
+      }
+    }
+
+    function tomarFoto() {
+      const width = video.videoWidth;
+      const height = video.videoHeight;
+
+      if (!width || !height) {
+        setStatus("La cámara aún no está lista.");
+        return;
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0, width, height);
+
+      canvas.toBlob((blob) => {
+        fotoBlob = blob;
+        const url = URL.createObjectURL(blob);
+        preview.src = url;
+        preview.style.display = "block";
+        video.style.display = "none";
+        destinos.style.display = "grid";
+        retakeBtn.style.display = "block";
+        captureBtn.disabled = true;
+        setStatus("Foto lista. Elige dónde subirla.");
+      }, "image/jpeg", 0.92);
+    }
+
+    async function subirFoto(destino) {
+      if (!fotoBlob) {
+        setStatus("Primero toma una foto.");
+        return;
+      }
+
+      const numero = numeroSecuencial(destino);
+      const nombreArchivo = `${destino}_${numero}.jpg`;
+      const carpetaDestino = destino.charAt(0).toUpperCase() + destino.slice(1);
+      const rutaDropbox = `/${CARPETA_PRINCIPAL}/${carpetaDestino}/${nombreArchivo}`;
+
+      try {
+        setStatus(`Subiendo ${nombreArchivo}...`);
+
+        const respuesta = await fetch("https://content.dropboxapi.com/2/files/upload", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${DROPBOX_TOKEN}`,
+            "Dropbox-API-Arg": JSON.stringify({
+              path: rutaDropbox,
+              mode: "add",
+              autorename: true,
+              mute: false,
+              strict_conflict: false
+            }),
+            "Content-Type": "application/octet-stream"
+          },
+          body: fotoBlob
+        });
+
+        if (!respuesta.ok) {
+          const errorText = await respuesta.text();
+          throw new Error(errorText);
+        }
+
+        setStatus(`✅ Subido correctamente: ${nombreArchivo}`);
+        destinos.style.display = "none";
+      } catch (error) {
+        console.error(error);
+        setStatus("❌ Error al subir. Revisa token, permisos o conexión.");
+      }
+    }
+
+    function tomarOtraFoto() {
+      fotoBlob = null;
+      preview.src = "";
+      preview.style.display = "none";
+      video.style.display = "block";
+      destinos.style.display = "none";
+      captureBtn.disabled = false;
+      retakeBtn.style.display = "none";
+      setStatus("Puedes tomar otra foto.");
+    }
+
+    startBtn.addEventListener("click", abrirCamara);
+    captureBtn.addEventListener("click", tomarFoto);
+    retakeBtn.addEventListener("click", tomarOtraFoto);
+  </script>
+</body>
+</html>
