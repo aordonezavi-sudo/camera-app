@@ -1,0 +1,157 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cabina Gastronómica</title>
+<style>
+body{
+margin:0;
+font-family:Arial,sans-serif;
+background:linear-gradient(180deg,#b3001b,#6f0010);
+display:flex;
+justify-content:center;
+align-items:center;
+min-height:100vh;
+color:white;
+padding:20px;
+}
+.container{
+width:100%;
+max-width:500px;
+background:rgba(255,255,255,.1);
+padding:20px;
+border-radius:25px;
+text-align:center;
+backdrop-filter:blur(8px);
+}
+video,img{
+width:100%;
+border-radius:20px;
+background:black;
+}
+button{
+width:100%;
+padding:15px;
+margin-top:10px;
+border:none;
+border-radius:15px;
+font-weight:bold;
+font-size:16px;
+cursor:pointer;
+}
+.primary{background:#ffc857;color:#5a2000;}
+.food{background:#2f8f46;color:white;}
+.grid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px;
+}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>🍽️ Cabina Gastronómica</h1>
+
+<video id="video" autoplay playsinline></video>
+<img id="preview" style="display:none;">
+
+<button class="primary" onclick="abrirCamara()">Abrir cámara</button>
+<button class="primary" onclick="tomarFoto()">Tomar foto</button>
+
+<div class="grid" id="opciones" style="display:none;">
+<button class="food" onclick="subir('JUANE_SENTADO','/Cabina Gastronomica/Juane sentado')">Juane sentado</button>
+<button class="food" onclick="subir('JUANE_DE_PIE','/Cabina Gastronomica/Juane de pie')">Juane de pie</button>
+<button class="food" onclick="subir('PACHAMANCA_SENTADO','/Cabina Gastronomica/Pachamanca sentado')">Pachamanca sentado</button>
+<button class="food" onclick="subir('PACHAMANCA_DE_PIE','/Cabina Gastronomica/Pachamanca de pie')">Pachamanca de pie</button>
+</div>
+
+<p id="estado"></p>
+<canvas id="canvas" style="display:none;"></canvas>
+</div>
+
+<script>
+const TOKEN = "sl.u.AGhNea03l4cLsJ4jREQm-Ae_Xf1-LTE5746shUq5z1Gprxsh0_ZEq8qHRJ1PXA7QTxijjLzNRc1Pr0TFsKal6AbBzj-8uTlgPiU9qp8Y2hBNrFK21vJsgKTvsEDbd25JbGD7qEQFmCBHyh3d6qcwwNeL6DjXSB_IG7effGsoSiTISLNbZ8uGHgxo3nRN4uN7P_bTT6aTCCDwCrUIAn5W9dCh0nBDpF8OxD_mLHwd8apkaaoxxXroRh2YNK8LaNPpauoJoWwba3csNR4JHMPex6I01_gfgTTZp34pTJQJ5n52BZbenvy2xryrDZa6YrxR1SWqqUVBEgH6JdU9yja6p38HFEysUbB1_4piLB9DKYEXUy24kpv-UMZ4mzREk9_dCz3NhqR6LOir0cQ6UBXaELY_leQ76r5WC_UFCzXAZWiZ-DBUa0CqtdIx2bfQQnAka9HwwhD72QhELmSKZFHfc39tgtMR4HGSYu8xervvdS_6fk57upj-BFMwopRKTm-jNyxqpJsueIn_Uzg7h17cXBIeFNhmGNpC0yJj5VvVAPYq2_6WxnSL-5JC12wOD-MHzVek8ph27NgrSNhri6oZe5D_wMueqvfAQ8g5RlXN9hSBfZ6sCtPgGFMFujC_uR8kTzmRIPKjaYBpTNLVsB4stY9mIbUu375cTZTpa_J-QPFqfc0ClAzyqZxMs1Ncf5Mp-Btwct2oVZvUNwViv3v7z4gUmXCBm9S71D0a51qywfwqQ4DkcpWRw3GGXTTNkD-mui5cTG2XZOHktoP8jYMos80ubQAm36LnZi0mMgqA64dvHxYaNlco2L-m0zj9ixBKhr4yoRYyQCFMXyLWGzAK_BKTfUKmxunwZRh9M8aPUi-Ljs5JcyixktDR_PRXpKqRzdvKhaucT_fDxhcWTpVvuX9OLEv96hEh3ioKLRdEA7j3mw0G3kAvnsIAFQV7Xx14YFkkxRSTvlxx3XTGK7K8qsSsPN7ACmGvysopWTnP4PIV32oWlkgcJ3TNdw6hWTq9V5VWBVMuINDttzNkaMJ4k3e3JbYfZZShAIxIZSp1b4Jq8FZN9vaRQWIN0dYIgjQKlkzc1aXmc-1fslb3k87_IhGkX-TIQfEQA2IKfBctt4C3CldS2fDGfYDdpi7fOSegjbbHS6vJhb2wEur7hTkELXa7VS6JhEF3-pbabfyIxyB_jHt26_eyeZiCDlHyUaGl4mp0Kd7xelBJlWNql078WwgkbZMF7gKAz-m2liY72KVSc78y1bLWhP8PZqDe_LE3gdCJdAmSzoSNmNfeGGvIq41nocxDlh1C9CQ9Dadhde6WulG0DJLunIaTag9Zw0L7B4pBQ-x0BdgAeBmBsGD9fZT2bFuj8Ftp2S6f46RfPmJjr276xUZ_mMhQ-IB5U_qDpSrZcxlCGPqXEzKLPMa1ok-ulVLBB6ewq4Iw1tvhkM18FADHOehi1ORbq1mSfVGjuKM";
+
+const video = document.getElementById("video");
+const preview = document.getElementById("preview");
+const canvas = document.getElementById("canvas");
+const estado = document.getElementById("estado");
+const opciones = document.getElementById("opciones");
+
+let fotoBlob = null;
+
+async function abrirCamara(){
+try{
+const stream = await navigator.mediaDevices.getUserMedia({
+video:{facingMode:"user"},
+audio:false
+});
+video.srcObject = stream;
+estado.innerText = "Cámara lista";
+}catch(e){
+estado.innerText = "Error abriendo cámara";
+}
+}
+
+function tomarFoto(){
+const ctx = canvas.getContext("2d");
+canvas.width = video.videoWidth;
+canvas.height = video.videoHeight;
+ctx.drawImage(video,0,0);
+
+canvas.toBlob((blob)=>{
+fotoBlob = blob;
+preview.src = URL.createObjectURL(blob);
+preview.style.display = "block";
+video.style.display = "none";
+opciones.style.display = "grid";
+estado.innerText = "Selecciona una categoría";
+},"image/jpeg",0.95);
+}
+
+function nombre(prefix){
+const key = "contador_"+prefix;
+let n = Number(localStorage.getItem(key)||0)+1;
+localStorage.setItem(key,n);
+return prefix+"_"+String(n).padStart(3,"0")+".jpg";
+}
+
+async function subir(prefix,folder){
+if(!fotoBlob){
+estado.innerText = "Primero toma una foto";
+return;
+}
+
+const fileName = nombre(prefix);
+
+try{
+const res = await fetch("https://content.dropboxapi.com/2/files/upload",{
+method:"POST",
+headers:{
+"Authorization":"Bearer "+TOKEN,
+"Dropbox-API-Arg":JSON.stringify({
+path:folder+"/"+fileName,
+mode:"add",
+autorename:true
+}),
+"Content-Type":"application/octet-stream"
+},
+body:fotoBlob
+});
+
+if(!res.ok){
+throw new Error(await res.text());
+}
+
+estado.innerText = "Foto subida: "+fileName;
+
+}catch(err){
+console.error(err);
+estado.innerText = "Error subiendo a Dropbox";
+}
+}
+</script>
+</body>
+</html>
